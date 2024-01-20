@@ -1,0 +1,23 @@
+  custom_dbt:
+    outputs:
+      dev:
+        type: greenplum
+        threads: "{{ env_var('DBT_COUNT_THREADS') | int }}"
+        host: "{{ env_var('DBT_GP_HOST') }}"
+        port: "{{ env_var('DBT_GP_PORT') | int}}"
+        user: "{{ env_var('DBT_USER') }}"
+        pass: "{{ env_var('DBT_PASS') }}"
+        dbname: "{{ env_var('DBT_GP_DBNAME') }}"
+        schema: "{{ env_var('DBT_GP_SCHEMA') }}"
+
+      prd:
+        type: greenplum
+        threads: "{{ env_var('DBT_COUNT_THREADS') | int }}"
+        host: "{{ env_var('DBT_GP_HOST_COURSE') }}"
+        port: "{{ env_var('DBT_GP_PORT') | int}}"
+        user: "{{ env_var('DBT_USER_COURSE') }}"
+        pass: "{{ env_var('DBT_PASS_COURSE') }}"
+        dbname: "{{ env_var('DBT_GP_DBNAME_PROD') }}"
+        schema: "{{ env_var('DBT_GP_SCHEMA') }}"
+
+    target: prd

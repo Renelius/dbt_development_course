@@ -1,0 +1,4 @@
+/logs
+.env
+.user.yml
+Dockerfile.local
