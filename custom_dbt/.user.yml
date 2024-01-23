@@ -22,3 +22,25 @@ id: 3ea7dd1f-8b0e-4989-b256-00c5a4801e60
 
   {{ return({'relations': [target_relation]}) }}
 {% endmaterialization %}
+
+
+{% macro greenplum__get_append_if_not_exists_strategy_sql(strategy_arg_dict) %}
+
+    {%- set dest_cols_str = strategy_arg_dict["dest_columns"] | map(attribute="name") | join(", ") -%}
+
+    insert into {{ strategy_arg_dict["target_relation"] }} ({{ dest_cols_str }})
+    (
+        select {{ dest_cols_str }}
+        from {{ strategy_arg_dict["temp_relation"] }} as src
+        where
+            not exists(
+                select 1
+                from {{ strategy_arg_dict["target_relation"] }} as tgt
+                where
+                    {%- for key in strategy_arg_dict["unique_key"] %}
+                        tgt.{{ key }} = src.{{ key }} {{ " and " if not loop.last }}
+                    {%- endfor %}
+            )
+    )
+
+{% endmacro %}

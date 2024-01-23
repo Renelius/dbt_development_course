@@ -2,3 +2,4 @@
 .env
 .user.yml
 Dockerfile.local
+.vscode
