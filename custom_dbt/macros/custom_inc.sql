@@ -1,6 +1,8 @@
 {% macro get_strategy(strategy, strategy_arg_dict) %}
   {% if strategy == 'append_if_not_exists' %}
     {% do return(greenplum__get_append_if_not_exists_strategy_sql(strategy_arg_dict)) %}
+  {% elif strategy == 'custom_delete_insert' %}
+    {% do return(greenplum__get_custom_delete_insert_strategy_sql(strategy_arg_dict)) %}
   {% else %}
     {% do exceptions.raise_compiler_error('invalid strategy: ' ~ strategy) %}
   {% endif %}
@@ -17,6 +19,9 @@
 
   -- configs
   {%- set unique_key = config.get('unique_key') -%}
+  {% if unique_key is not sequence or unique_key is string %}
+     {% do exceptions.raise_compiler_error('conf param unique_key must be list') %}
+  {% endif %}
   {%- set full_refresh_mode = (should_full_refresh()  or existing_relation.is_view) -%}
 
 
@@ -29,7 +34,7 @@
   {% else %}
     {% do run_query(get_create_table_as_sql(True, temp_relation, sql)) %}
 
-    {% set dest_columns = adapter.get_columns_in_relation(existing_relation) %}
+    {% set dest_columns = get_columns_in_relation(existing_relation) %}
     {% set incremental_strategy = config.get('incremental_strategy') or 'default' %}
 
     {% set strategy_arg_dict = ({'target_relation': target_relation, 'temp_relation': temp_relation, 'unique_key': unique_key, 'dest_columns': dest_columns }) %}

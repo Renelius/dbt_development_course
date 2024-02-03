@@ -44,3 +44,54 @@ id: 3ea7dd1f-8b0e-4989-b256-00c5a4801e60
     )
 
 {% endmacro %}
+
+ ({'target_relation': target_relation, 'temp_relation': temp_relation, 'unique_key': unique_key, 'dest_columns': dest_columns })
+
+    {% set target_relation = strategy_arg_dict['target_relation'] %}
+    {% set temp_relation = strategy_arg_dict['temp_relation'] %}
+    {% set unique_key = strategy_arg_dict['unique_key'] %}
+    {% set dest_columns = strategy_arg_dict['dest_columns'] %}
+
+    {%- set dest_cols_csv = get_quoted_csv(strategy_arg_dict["dest_columns"] | map(attribute="name")) -%}
+    {%- set dest_cols_list = strategy_arg_dict["dest_columns"] | map(attribute="name") | list -%}
+    {% set columns_with_old_version_values = ['mt_insert_dt'] %}
+    
+    create temporary table some_temp
+               as
+                (
+                select
+                {% for col in dest_cols_list -%}
+                  {% if col in columns_with_old_version_values-%}
+                    COALESCE(tgt.{{ col }}, src.{{ col }}) as {{ col }}
+                  {% else -%}
+                    src.{{ col }}
+                  {%- endif -%}
+                  {%- if not loop.last-%}, {%- endif -%}
+                {%- endfor %}
+                from {{ strategy_arg_dict["temp_relation"] }} as src
+                left join {{ strategy_arg_dict["target_relation"] }} as tgt on
+                    {%- for key in strategy_arg_dict["unique_key"] %}
+                        tgt.{{ key }} = src.{{ key }} {{ " and " if not loop.last }}
+                    {%- endfor %}
+                );
+
+    {% if 1 %}
+            delete from {{ strategy_arg_dict["target_relation"] }} tgt
+            using {{ strategy_arg_dict["temp_relation"] }} src
+            where (
+                {% for key in strategy_arg_dict["unique_key"] %}
+                    src.{{ key }} = tgt.{{ key }}
+                    {{ "and " if not loop.last}}
+                {% endfor %}
+            );
+
+    {% endif %}
+
+    insert into {{ strategy_arg_dict["target_relation"] }} ({{ dest_cols_csv }})
+    (
+        select {{ dest_cols_csv }}
+        from some_temp 
+    )
+
+
+{% endmacro %}

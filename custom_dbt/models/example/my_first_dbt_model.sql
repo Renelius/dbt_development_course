@@ -19,18 +19,17 @@
     raw_partition=raw_partition,
     distributed_by='custom_id',
     materialized='custom_incremental',
-    incremental_strategy='append_if_not_exists',
+    incremental_strategy='custom_delete_insert',
     unique_key=['custom_id'],
     table_owner='test'
     ) 
 }}
 
 with source_data as (
-    {% for i in range(5) %}
+    {% for i in range(15) %}
     select {{ i }} as custom_id
     {% if not loop.last%}union{% endif %}
     {% endfor %}
-
 )
 
 select 
